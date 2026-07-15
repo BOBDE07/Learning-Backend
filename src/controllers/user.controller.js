@@ -235,7 +235,14 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
 const changeCurrentPassword = asyncHandler(async(req , res) => {
     const {oldPassword , newPassword} = req.body
 
+    if(!(oldPassword || newPassword)) {
+        throw new ApiError(400 , "both password are required")
+    }
+
     const user = await User.findById(req.user?._id)
+    if(!user ) {
+        throw new ApiError(400 , "User not found")
+    }
     const isPasswordcorrect = await user.isPasswordCorrect(oldPassword) 
 
     if(!isPasswordcorrect) {
@@ -244,7 +251,7 @@ const changeCurrentPassword = asyncHandler(async(req , res) => {
 
     user.password = newPassword
 
-    await user.save({validateBeforeSafe: false })
+    await user.save({validateBeforeSave: false })
 
     return res
     .status(200)
@@ -255,7 +262,7 @@ const changeCurrentPassword = asyncHandler(async(req , res) => {
 
 const getCurrentUser = asyncHandler(async(req, res)=>{
     return res.status(200)
-    .json(200, req.user, "current user fetched successfully")
+    .json(new ApiResponse(200, req.user, "current user fetched successfully"))
 })
 
 
@@ -266,7 +273,7 @@ const updateAccountDetails = asyncHandler(async(req, res)=>{
         throw new ApiError(400 , "all field are required")
     }
 
-    const user = User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id , 
         {
             $set:{
